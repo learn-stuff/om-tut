@@ -1,6 +1,8 @@
-(ns om-tut.core
+(ns ^:figwheel-always om-tut.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]))
+            [om.dom :as dom :include-macros true]
+            [cljs.core.async :refer [put! chan <!]]))
 
 (enable-console-print!)
 
@@ -30,7 +32,9 @@
   (reify
     om/IRender
     (render [this]
-      (dom/li nil (display-name contact)))))
+      (dom/li nil
+        (dom/span nil (display-name contact))
+        (dom/button nil "Delete")))))
 
 (defn contacts-view [data owner]
   (reify
