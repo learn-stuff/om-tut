@@ -30,20 +30,32 @@
 
 (defn contact-view [contact owner]
   (reify
-    om/IRender
-    (render [this]
+    om/IRenderState
+    (render-state [this {:keys [delete]}]
       (dom/li nil
         (dom/span nil (display-name contact))
-        (dom/button nil "Delete")))))
+        (dom/button #js {:onClick (fn [e] (put! delete @contact))} "Delete")))))
 
 (defn contacts-view [data owner]
   (reify
-    om/IRender
-    (render [this]
+    om/IInitState
+    (init-state [_]
+      {:delete (chan)})
+    om/IWillMount
+    (will-mount [_]
+      (let [delete (om/get-state owner :delete)]
+        (go (loop []
+          (let [contact (<! delete)]
+            (om/transact! data :contacts
+              (fn [xs] (vec (remove #(= contact %) xs))))
+            (recur))))))
+    om/IRenderState
+    (render-state [this {:keys [delete]}]
       (dom/div nil
         (dom/h2 nil "Contact list")
         (apply dom/ul nil
-          (om/build-all contact-view (:contacts data)))))))
+          (om/build-all contact-view (:contacts data)
+            {:init-state {:delete delete}}))))))
 
 (om/root contacts-view app-state
   {:target (. js/document (getElementById "contacts"))})
